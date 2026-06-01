@@ -62,8 +62,12 @@ async def extract_m3u8(match_id):
         def check_request(request):
             nonlocal m3u8_url
             if ".m3u8" in request.url and not m3u8_url:
-                m3u8_url = request.url
-                print(f"[+] 拦截到 m3u8: {m3u8_url}")
+                # 获取原始抓取到的 URL
+                raw_url = request.url
+                # 执行域名替换逻辑
+                m3u8_url = raw_url.replace("https://hls.zb.ssports.com", "https://tv8.gitee.tech")
+                print(f"[+] 拦截到原始 m3u8: {raw_url}")
+                print(f"[+] 替换后最终 m3u8: {m3u8_url}")
 
         page.on("request", check_request)
 
