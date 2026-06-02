@@ -62,12 +62,9 @@ async def extract_m3u8(match_id):
         def check_request(request):
             nonlocal m3u8_url
             if ".m3u8" in request.url and not m3u8_url:
-                # 获取原始抓取到的 URL
-                raw_url = request.url
-                # 执行域名替换逻辑
-                m3u8_url = raw_url.replace("https://hls.zb.ssports.com", "https://tv8.gitee.tech")
-                print(f"[+] 拦截到原始 m3u8: {raw_url}")
-                print(f"[+] 替换后最终 m3u8: {m3u8_url}")
+                # 这里只负责获取原始 URL
+                m3u8_url = request.url
+                print(f"[+] 拦截到原始 m3u8: {m3u8_url}")
 
         page.on("request", check_request)
 
@@ -89,7 +86,6 @@ async def run_scraper_task():
     list_url = get_today_match_url()
     live_matches = get_live_matches(list_url)
     
-    # 【新增逻辑】：如果没有直播中的比赛，清空旧数据并返回空订阅
     if not live_matches:
         print("[-] 当前无直播中比赛，正在清空旧数据并返回空订阅...")
         
@@ -106,9 +102,20 @@ async def run_scraper_task():
     # === 正常抓取逻辑 ===
     results = []
     for match in live_matches:
-        m3u8 = await extract_m3u8(match['id'])
-        if m3u8:
-            results.append({'title': match['title'], 'url': m3u8})
+        raw_m3u8 = await extract_m3u8(match['id'])
+        if raw_m3u8:
+            # 线路①：原始获取的链接
+            results.append({
+                'title': f"{match['title']}①", 
+                'url': raw_m3u8
+            })
+            
+            # 线路②：替换域名后的链接
+            replaced_m3u8 = raw_m3u8.replace("https://hls.zb.ssports.com", "https://tv8.gitee.tech")
+            results.append({
+                'title': f"{match['title']}②", 
+                'url': replaced_m3u8
+            })
 
     if results:
         with open(TXT_FILE, 'w', encoding='utf-8') as f:
@@ -135,7 +142,6 @@ async def trigger_scrape(background_tasks: BackgroundTasks, token: str = Query("
     if token != SECRET_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid or missing token")
     
-    # 将耗时的抓取任务放入后台，立即给 CF Worker 返回 HTTP 200 以防超时
     background_tasks.add_task(run_scraper_task)
     return JSONResponse(content={"status": "accepted", "message": "鉴权成功，抓取任务已在后台启动"})
 
