@@ -111,7 +111,7 @@ async def run_scraper_task():
             })
             
             # 线路②：替换域名后的链接
-            replaced_m3u8 = raw_m3u8.replace("https://hls.zb.ssports.com", "https://tv8.gitee.tech")
+            replaced_m3u8 = raw_m3u8.replace("https://hls.zb.ssports.com", "https://688gerger.zh-cn.edgeone.run")
             results.append({
                 'title': f"{match['title']}②", 
                 'url': replaced_m3u8
